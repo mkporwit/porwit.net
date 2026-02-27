@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[codz]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Linting / type checking
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+.pytype/
+
+# AWS SAM
+.aws-sam/
+
+# OpenTofu / Terraform
+**/.terraform/
+**/.build/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+
+# Environments / secrets
+.env
+.envrc
+
+# Data files
+*.xlsx
+data/
+
+# Claude
+.claude/

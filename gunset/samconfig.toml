@@ -1,0 +1,16 @@
+# SAM configuration file
+# Run: sam deploy --guided (first time) or sam deploy (subsequent)
+
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "gunset-api"
+resolve_s3 = true
+s3_prefix = "gunset-api"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=\"dev\" FromEmail=\"mkporwit@porwit.net\" FrontendUrl=\"https://gunset.porwit.net\" DomainName=\"gunset.porwit.net\" CertificateArn=\"arn:aws:acm:us-east-1:569397624996:certificate/8aee7563-ef07-44eb-9e1c-071ddcd3f5b0\""
+
+[default.build.parameters]
+use_container = false

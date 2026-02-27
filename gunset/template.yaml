@@ -1,0 +1,256 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Gunset - Weekly shooting challenge card service
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+  FromEmail:
+    Type: String
+    Description: Verified SES email address for sending magic links
+  FrontendUrl:
+    Type: String
+    Default: ""
+    Description: Frontend URL (leave empty to auto-generate from S3)
+  DomainName:
+    Type: String
+    Default: ""
+    Description: Custom domain name (e.g., gunset.porwit.net)
+  CertificateArn:
+    Type: String
+    Default: ""
+    Description: ACM certificate ARN (must be in us-east-1)
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.11
+    MemorySize: 512
+    Environment:
+      Variables:
+        DYNAMODB_TABLE: !Ref GunsetTable
+        FROM_EMAIL: !Ref FromEmail
+
+Resources:
+  # DynamoDB Table
+  GunsetTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub gunset-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: email-index
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+            - AttributeName: pk
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+
+  # Lambda Function
+  GunsetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub gunset-api-${Environment}
+      CodeUri: src/
+      Handler: handler.lambda_handler
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          AWS_REGION_NAME: !Ref AWS::Region
+          FRONTEND_URL: !If
+            - HasFrontendUrl
+            - !Ref FrontendUrl
+            - !GetAtt FrontendBucket.WebsiteURL
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GunsetTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*'
+      Events:
+        # Catch-all proxy - handles all routes including OPTIONS
+        ProxyAny:
+          Type: Api
+          Properties:
+            RestApiId: !Ref GunsetApi
+            Path: /{proxy+}
+            Method: ANY
+
+  # API Gateway
+  GunsetApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub gunset-api-${Environment}
+      StageName: !Ref Environment
+      BinaryMediaTypes:
+        - application/pdf
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: !If
+          - HasFrontendUrl
+          - !Sub "'${FrontendUrl}'"
+          - "'*'"
+
+  # S3 Bucket for Frontend
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub gunset-frontend-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+
+  # S3 Bucket Policy for public read
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub ${FrontendBucket.Arn}/*
+
+  # CloudFront Distribution (only created if custom domain is provided)
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Condition: HasCustomDomain
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub Gunset ${Environment} distribution
+        Aliases:
+          - !Ref DomainName
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+          # S3 Origin for static frontend
+          - Id: S3Origin
+            DomainName: !Sub ${FrontendBucket}.s3-website-${AWS::Region}.amazonaws.com
+            CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+          # API Gateway Origin
+          - Id: ApiOrigin
+            DomainName: !Sub ${GunsetApi}.execute-api.${AWS::Region}.amazonaws.com
+            OriginPath: !Sub /${Environment}
+            CustomOriginConfig:
+              HTTPPort: 443
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          Compress: true
+        CacheBehaviors:
+          # API routes - no caching, forward all
+          - PathPattern: /api/*
+            TargetOriginId: ApiOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - POST
+              - PATCH
+              - DELETE
+            ForwardedValues:
+              QueryString: true
+              Headers:
+                - Authorization
+                - Content-Type
+              Cookies:
+                Forward: none
+            MinTTL: 0
+            DefaultTTL: 0
+            MaxTTL: 0
+        CustomErrorResponses:
+          # Handle SPA routing
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, prod]
+  HasFrontendUrl: !Not [!Equals [!Ref FrontendUrl, ""]]
+  HasCustomDomain: !Not [!Equals [!Ref DomainName, ""]]
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${GunsetApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+  FrontendUrl:
+    Description: Frontend S3 Website URL
+    Value: !GetAtt FrontendBucket.WebsiteURL
+  FrontendBucketName:
+    Description: Frontend S3 Bucket Name (for deploying frontend)
+    Value: !Ref FrontendBucket
+  FunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt GunsetFunction.Arn
+  TableName:
+    Description: DynamoDB Table Name
+    Value: !Ref GunsetTable
+  CloudFrontDomain:
+    Condition: HasCustomDomain
+    Description: CloudFront distribution domain name
+    Value: !GetAtt CloudFrontDistribution.DomainName
+  CloudFrontDistributionId:
+    Condition: HasCustomDomain
+    Description: CloudFront distribution ID (for cache invalidation)
+    Value: !Ref CloudFrontDistribution
+  CustomDomainUrl:
+    Condition: HasCustomDomain
+    Description: Custom domain URL
+    Value: !Sub https://${DomainName}

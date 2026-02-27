@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gunset - Weekly Shooting Challenge</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        header p {
+            color: #8892b0;
+            font-size: 1rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            color: #ccd6f6;
+        }
+
+        input[type="email"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="email"]:focus {
+            outline: none;
+            border-color: #64ffda;
+        }
+
+        input[type="email"]::placeholder {
+            color: #8892b0;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #64ffda;
+            color: #0a192f;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #4cd9b5;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            background: #4a6b63;
+            color: #8892b0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(100, 255, 218, 0.1);
+            color: #64ffda;
+            border: 1px solid #64ffda;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(100, 255, 218, 0.2);
+        }
+
+        .btn-danger {
+            background: rgba(255, 100, 100, 0.1);
+            color: #ff6464;
+            border: 1px solid #ff6464;
+            margin-top: 10px;
+        }
+
+        .playing-card {
+            background: #fff;
+            color: #000;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            margin: 20px auto;
+            width: 180px;
+            height: 252px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .playing-card.red {
+            color: #d32f2f;
+        }
+
+        .playing-card > .center-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .playing-card > .center-display .rank {
+            font-size: 3.5rem;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .playing-card > .center-display .suit {
+            font-size: 4rem;
+            line-height: 1;
+        }
+
+        .playing-card .corner {
+            position: absolute;
+            font-size: 0.9rem;
+            line-height: 1.1;
+            text-align: center;
+        }
+
+        .playing-card .corner .rank {
+            font-weight: bold;
+        }
+
+        .playing-card .corner .suit {
+            font-size: 1.1rem;
+        }
+
+        .playing-card .corner.top-left {
+            top: 8px;
+            left: 8px;
+        }
+
+        .playing-card .corner.bottom-right {
+            bottom: 8px;
+            right: 8px;
+            transform: rotate(180deg);
+        }
+
+        .challenge-text {
+            background: rgba(100, 255, 218, 0.1);
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 1.1rem;
+            color: #64ffda;
+        }
+
+        .week-info {
+            text-align: center;
+            color: #8892b0;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-bar .fill {
+            background: linear-gradient(90deg, #64ffda, #4cd9b5);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #8892b0;
+            font-size: 0.9rem;
+        }
+
+        .history-list {
+            list-style: none;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .history-item .mini-card {
+            width: 40px;
+            height: 56px;
+            background: #fff;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .history-item .mini-card.red {
+            color: #d32f2f;
+        }
+
+        .history-item .mini-card .rank {
+            font-size: 0.8rem;
+        }
+
+        .history-item .mini-card .suit {
+            font-size: 1rem;
+        }
+
+        .history-item .details {
+            flex: 1;
+        }
+
+        .history-item .details .challenge {
+            font-size: 0.9rem;
+            color: #ccd6f6;
+        }
+
+        .history-item .details .week {
+            font-size: 0.8rem;
+            color: #8892b0;
+            margin-top: 4px;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .message.success {
+            background: rgba(100, 255, 218, 0.1);
+            border: 1px solid #64ffda;
+            color: #64ffda;
+        }
+
+        .message.error {
+            background: rgba(255, 100, 100, 0.1);
+            border: 1px solid #ff6464;
+            color: #ff6464;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8892b0;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #64ffda;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #8892b0;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: rgba(100, 255, 218, 0.1);
+            border-color: #64ffda;
+            color: #64ffda;
+        }
+
+        .tab:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .actions button {
+            flex: 1;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #8892b0;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GUNSET</h1>
+            <p>Weekly Shooting Challenge</p>
+        </header>
+
+        <!-- Login View -->
+        <div id="login-view">
+            <div class="card">
+                <h2>Get Started</h2>
+                <div id="login-message" class="message hidden"></div>
+                <form id="login-form">
+                    <input type="email" id="email-input" placeholder="Enter your email" required>
+                    <button type="submit" class="btn-primary">Send Magic Link</button>
+                </form>
+                <p style="margin-top: 20px; color: #8892b0; font-size: 0.9rem; text-align: center;">
+                    We'll send you a login link. No password needed.
+                </p>
+            </div>
+        </div>
+
+        <!-- Verification View -->
+        <div id="verify-view" class="hidden">
+            <div class="card">
+                <h2>Verifying...</h2>
+                <div class="loading">Logging you in</div>
+            </div>
+        </div>
+
+        <!-- Main App View -->
+        <div id="app-view" class="hidden">
+            <div class="tabs">
+                <div class="tab active" data-tab="current">This Week</div>
+                <div class="tab" data-tab="history">History</div>
+            </div>
+
+            <!-- Current Card Tab -->
+            <div id="current-tab">
+                <div class="card">
+                    <div id="card-loading" class="loading">Loading your card</div>
+                    <div id="card-content" class="hidden">
+                        <div class="week-info" id="week-info"></div>
+                        <div class="playing-card" id="playing-card">
+                            <div class="corner top-left">
+                                <div class="rank" id="corner-tl-rank"></div>
+                                <div class="suit" id="corner-tl-suit"></div>
+                            </div>
+                            <div class="center-display">
+                                <div class="rank" id="center-rank"></div>
+                                <div class="suit" id="center-suit"></div>
+                            </div>
+                            <div class="corner bottom-right">
+                                <div class="rank" id="corner-br-rank"></div>
+                                <div class="suit" id="corner-br-suit"></div>
+                            </div>
+                        </div>
+                        <div class="challenge-text" id="challenge-text"></div>
+                        <div class="progress-bar">
+                            <div class="fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-text" id="progress-text"></div>
+                        <div class="actions">
+                            <button class="btn-secondary" onclick="downloadPdf()">Download PDF</button>
+                            <button class="btn-secondary" onclick="emailPdf()">Email PDF</button>
+                        </div>
+                    </div>
+                    <div id="no-card" class="hidden" style="text-align: center; padding: 20px;">
+                        <p style="color: #8892b0;">No card drawn yet for this week.</p>
+                        <button class="btn-primary" style="margin-top: 20px;" onclick="drawCard()">Draw This Week's Card</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="history-tab" class="hidden">
+                <div class="card">
+                    <h2>Draw History</h2>
+                    <div id="history-loading" class="loading">Loading history</div>
+                    <ul class="history-list hidden" id="history-list"></ul>
+                    <div id="no-history" class="hidden" style="text-align: center; padding: 20px; color: #8892b0;">
+                        No cards drawn yet. Start your challenge!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logout -->
+            <button class="btn-danger" onclick="logout()" style="margin-top: 10px;">Log Out</button>
+        </div>
+
+        <footer>
+            <p>Draw one card per week. Complete all 54 for a full deck challenge.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Configuration - auto-detect API URL based on hostname
+        function getApiUrl() {
+            // If on custom domain (not S3 or localhost), use relative /api path
+            const hostname = window.location.hostname;
+            if (!hostname.includes('s3') &&
+                !hostname.includes('localhost') &&
+                !hostname.includes('127.0.0.1') &&
+                !hostname.includes('amazonaws.com')) {
+                return '/api';
+            }
+            // Fall back to direct API Gateway URL
+            return localStorage.getItem('gunset_api_url') || 'https://xqmeqzjbok.execute-api.us-west-2.amazonaws.com/dev';
+        }
+        const API_URL = getApiUrl();
+
+        // State
+        let authToken = localStorage.getItem('gunset_token');
+        let currentCard = null;
+
+        // Suit symbols
+        const SUIT_SYMBOLS = {
+            'Hearts': '\u2665',
+            'Diamonds': '\u2666',
+            'Clubs': '\u2663',
+            'Spades': '\u2660',
+            'Red': '\u2605',
+            'Black': '\u2605'
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for magic link token in URL
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token');
+
+            if (token) {
+                verifyToken(token);
+            } else if (authToken) {
+                showAppView();
+                loadCurrentCard();
+            } else {
+                showLoginView();
+            }
+
+            // Setup tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+
+            // Setup login form
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+        });
+
+        // Views
+        function showLoginView() {
+            document.getElementById('login-view').classList.remove('hidden');
+            document.getElementById('verify-view').classList.add('hidden');
+            document.getElementById('app-view').classList.add('hidden');
+        }
+
+        function showVerifyView() {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('verify-view').classList.remove('hidden');
+            document.getElementById('app-view').classList.add('hidden');
+        }
+
+        function showAppView() {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('verify-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
+        }
+
+        // Login
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value;
+            const messageEl = document.getElementById('login-message');
+            const submitBtn = document.querySelector('#login-form button[type="submit"]');
+
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Sending...';
+
+                const res = await fetch(`${API_URL}/auth/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    messageEl.className = 'message success';
+                    messageEl.textContent = 'Check your email for the login link!';
+                    messageEl.classList.remove('hidden');
+
+                    let remaining = 30;
+                    submitBtn.textContent = `Resend in ${remaining}s`;
+                    const countdown = setInterval(() => {
+                        remaining--;
+                        if (remaining <= 0) {
+                            clearInterval(countdown);
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Send Magic Link';
+                        } else {
+                            submitBtn.textContent = `Resend in ${remaining}s`;
+                        }
+                    }, 1000);
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send Magic Link';
+                    throw new Error(data.error || 'Failed to send login link');
+                }
+            } catch (err) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Magic Link';
+                messageEl.className = 'message error';
+                messageEl.textContent = err.message;
+                messageEl.classList.remove('hidden');
+            }
+        }
+
+        // Verify magic link
+        async function verifyToken(token) {
+            showVerifyView();
+
+            try {
+                const res = await fetch(`${API_URL}/auth/verify?token=${token}`);
+                const data = await res.json();
+
+                if (res.ok) {
+                    authToken = data.token;
+                    localStorage.setItem('gunset_token', authToken);
+                    window.history.replaceState({}, '', window.location.pathname);
+                    showAppView();
+                    loadCurrentCard();
+                } else {
+                    throw new Error(data.error || 'Invalid or expired link');
+                }
+            } catch (err) {
+                alert('Login failed: ' + err.message);
+                showLoginView();
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('gunset_token');
+            authToken = null;
+            showLoginView();
+        }
+
+        // Tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+
+            document.getElementById('current-tab').classList.toggle('hidden', tabName !== 'current');
+            document.getElementById('history-tab').classList.toggle('hidden', tabName !== 'history');
+
+            if (tabName === 'history') {
+                loadHistory();
+            }
+        }
+
+        // Load current card
+        async function loadCurrentCard() {
+            const loading = document.getElementById('card-loading');
+            const content = document.getElementById('card-content');
+            const noCard = document.getElementById('no-card');
+
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
+            noCard.classList.add('hidden');
+
+            try {
+                console.log('Fetching card from:', `${API_URL}/card`);
+                const res = await fetch(`${API_URL}/card`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                console.log('Response status:', res.status);
+
+                if (res.status === 401) {
+                    logout();
+                    return;
+                }
+
+                const data = await res.json();
+                console.log('Response data:', data);
+                loading.classList.add('hidden');
+
+                if (data.error) {
+                    loading.classList.remove('hidden');
+                    loading.textContent = 'Error: ' + data.error;
+                    return;
+                }
+
+                if (data.card) {
+                    currentCard = data;
+                    renderCard(data);
+                    content.classList.remove('hidden');
+                } else {
+                    noCard.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('Error loading card:', err);
+                loading.classList.remove('hidden');
+                loading.textContent = 'Error loading card: ' + err.message;
+            }
+        }
+
+        // Draw card
+        async function drawCard() {
+            await loadCurrentCard();
+        }
+
+        // Render card
+        function renderCard(data) {
+            const card = data.card;
+            const isRed = ['Hearts', 'Diamonds', 'Red'].includes(card.suit);
+            const cardEl = document.getElementById('playing-card');
+            const suitSymbol = SUIT_SYMBOLS[card.suit] || card.suit;
+
+            cardEl.className = 'playing-card' + (isRed ? ' red' : '');
+
+            // Set corner elements
+            document.getElementById('corner-tl-rank').textContent = card.rank;
+            document.getElementById('corner-tl-suit').textContent = suitSymbol;
+            document.getElementById('corner-br-rank').textContent = card.rank;
+            document.getElementById('corner-br-suit').textContent = suitSymbol;
+
+            // Set center display
+            document.getElementById('center-rank').textContent = card.rank;
+            document.getElementById('center-suit').textContent = suitSymbol;
+
+            document.getElementById('week-info').textContent = `Week ${data.week.week}, ${data.week.year}`;
+            document.getElementById('challenge-text').textContent = card.challenge;
+
+            const progress = parseInt(data.deck_progress.split('/')[0]);
+            document.getElementById('progress-fill').style.width = `${(progress / 54) * 100}%`;
+            document.getElementById('progress-text').textContent = `${data.deck_progress} cards drawn`;
+        }
+
+        // Load history
+        async function loadHistory() {
+            const loading = document.getElementById('history-loading');
+            const list = document.getElementById('history-list');
+            const noHistory = document.getElementById('no-history');
+
+            loading.classList.remove('hidden');
+            list.classList.add('hidden');
+            noHistory.classList.add('hidden');
+
+            try {
+                const res = await fetch(`${API_URL}/history`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await res.json();
+                loading.classList.add('hidden');
+
+                if (data.history && data.history.length > 0) {
+                    list.innerHTML = data.history.map(entry => {
+                        const card = entry.card;
+                        const isRed = ['Hearts', 'Diamonds', 'Red'].includes(card.suit);
+                        const suit = SUIT_SYMBOLS[card.suit] || card.suit;
+
+                        return `
+                            <li class="history-item">
+                                <div class="mini-card${isRed ? ' red' : ''}">
+                                    <span class="rank">${card.rank}</span>
+                                    <span class="suit">${suit}</span>
+                                </div>
+                                <div class="details">
+                                    <div class="challenge">${card.challenge}</div>
+                                    <div class="week">Week ${entry.week}, ${entry.year}</div>
+                                </div>
+                            </li>
+                        `;
+                    }).join('');
+                    list.classList.remove('hidden');
+                } else {
+                    noHistory.classList.remove('hidden');
+                }
+            } catch (err) {
+                loading.textContent = 'Error loading history';
+            }
+        }
+
+        // Download PDF
+        async function downloadPdf() {
+            try {
+                const res = await fetch(`${API_URL}/card/pdf`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/pdf'
+                    }
+                });
+
+                if (!res.ok) throw new Error('Failed to download PDF');
+
+                // Check if response is base64 encoded (API Gateway proxy)
+                const contentType = res.headers.get('content-type');
+                let blob;
+
+                if (contentType && contentType.includes('application/pdf')) {
+                    // Direct binary response
+                    blob = await res.blob();
+                } else {
+                    // Base64 encoded response - decode it
+                    const text = await res.text();
+                    // Try to parse as JSON in case it's wrapped
+                    let base64Data = text;
+                    try {
+                        const json = JSON.parse(text);
+                        base64Data = json.body || text;
+                    } catch (e) {
+                        // Not JSON, use as-is
+                    }
+                    const binaryString = atob(base64Data);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    blob = new Blob([bytes], { type: 'application/pdf' });
+                }
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `gunset-week${currentCard.week.week}-${currentCard.week.year}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                alert('Failed to download PDF: ' + err.message);
+            }
+        }
+
+        // Email PDF
+        async function emailPdf() {
+            try {
+                const res = await fetch(`${API_URL}/card/email`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert('PDF sent to your email!');
+                } else {
+                    throw new Error(data.error || 'Failed to send email');
+                }
+            } catch (err) {
+                alert('Failed to email PDF: ' + err.message);
+            }
+        }
+    </script>
+</body>
+</html>
