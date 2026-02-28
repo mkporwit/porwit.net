@@ -567,6 +567,15 @@ ROUTES = [
                                 },
                                 "total_active": {"type": "integer"},
                                 "new_since_last": {"type": "integer"},
+                                "by_status": {
+                                    "type": "object",
+                                    "additionalProperties": {"type": "integer"},
+                                    "description": "Count of active jobs grouped by status",
+                                },
+                                "already_applied": {
+                                    "type": "integer",
+                                    "description": "Count of active jobs matching an application URL",
+                                },
                                 "jobs": {
                                     "type": "array",
                                     "items": {"$ref": "#/components/schemas/Job"},
