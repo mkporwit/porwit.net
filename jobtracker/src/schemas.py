@@ -55,7 +55,7 @@ SCHEMAS = {
             },
             "status": {
                 "type": "string",
-                "enum": ["new", "reviewed", "applied", "ignored", "gone"],
+                "enum": ["new", "reviewed", "applied", "ignored", "poor_match", "gone"],
             },
             "already_applied": {
                 "type": "boolean",

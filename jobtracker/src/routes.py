@@ -602,7 +602,7 @@ ROUTES = [
                         "properties": {
                             "status": {
                                 "type": "string",
-                                "enum": ["new", "reviewed", "applied", "ignored", "gone"],
+                                "enum": ["new", "reviewed", "applied", "ignored", "poor_match", "gone"],
                             },
                             "notes": {"type": "string"},
                         },

@@ -474,6 +474,7 @@ paths:
                   - reviewed
                   - applied
                   - ignored
+                  - poor_match
                   - gone
                 notes:
                   type: string
@@ -640,6 +641,7 @@ components:
           - reviewed
           - applied
           - ignored
+          - poor_match
           - gone
         already_applied:
           type: boolean

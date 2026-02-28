@@ -348,15 +348,20 @@ def run_scan():
 
     for company in companies:
         ats = company.get("ats", "")
+        careers_url = company.get("careers_url", "")
         parser = PARSERS.get(ats)
         if not parser:
             errors.append({"company": company["name"], "error": f"Unknown ATS: {ats}"})
             continue
 
+        if not careers_url:
+            errors.append({"company": company["name"], "error": "Missing careers_url"})
+            continue
+
         found_jobs, error = parser(
             company["name"],
             company.get("sector", ""),
-            company.get("careers_url", ""),
+            careers_url,
         )
         if error:
             errors.append({"company": company["name"], "error": error})
