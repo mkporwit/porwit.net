@@ -1,0 +1,659 @@
+openapi: 3.0.3
+info:
+  title: JobTracker API
+  description: |
+    Job application tracker and career page monitor.
+    Tracks job applications, monitors company career pages for matching roles,
+    and provides analytics on the job search pipeline.
+  version: 1.0.0
+servers:
+- url: https://jobtracker.porwit.net/api
+  description: Production
+security:
+- BearerAuth: []
+paths:
+  /auth/login:
+    post:
+      summary: Log in and get a JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - username
+              - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token (valid for 30 days)
+                  username:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Error'
+  /applications:
+    get:
+      summary: List job applications
+      parameters:
+      - name: company
+        in: query
+        schema:
+          type: string
+        description: Filter by company name (case-insensitive substring)
+      - name: status
+        in: query
+        schema:
+          type: string
+        description: Filter by status (case-insensitive substring)
+      - name: level
+        in: query
+        schema:
+          type: string
+        description: Filter by level
+      - name: source
+        in: query
+        schema:
+          type: string
+        description: Filter by source
+      - name: date_from
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Filter applications on or after this date (YYYY-MM-DD)
+      - name: date_to
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Filter applications on or before this date (YYYY-MM-DD)
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 50
+        description: Max number of applications to return
+      responses:
+        '200':
+          description: List of applications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: Total matching applications (before limit)
+                  applications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Application'
+    post:
+      summary: Create a new job application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - date
+              - company
+              - role
+              properties:
+                date:
+                  type: string
+                  format: date
+                  description: Application date (YYYY-MM-DD)
+                company:
+                  type: string
+                role:
+                  type: string
+                level:
+                  type: string
+                  description: Seniority level (e.g. Director, VP, Senior EM)
+                status:
+                  type: string
+                  description: Application status (e.g. Applied, Interview, Rejected, Offer)
+                source:
+                  type: string
+                  description: Where the job was found (e.g. LinkedIn, Referral)
+                link:
+                  type: string
+                  format: uri
+                  description: URL of the job posting
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Application created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: ULID of the new application
+                  application:
+                    $ref: '#/components/schemas/Application'
+        '400':
+          $ref: '#/components/responses/Error'
+  /applications/{id}:
+    patch:
+      summary: Update a job application
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Application ULID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Fields to update (any Application field)
+              properties:
+                status:
+                  type: string
+                level:
+                  type: string
+                notes:
+                  type: string
+                link:
+                  type: string
+                closed:
+                  type: boolean
+      responses:
+        '200':
+          description: Application updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: '#/components/schemas/Application'
+        '404':
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: Delete a job application
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Application ULID
+      responses:
+        '200':
+          description: Application deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: string
+                    description: ID of the deleted application
+        '404':
+          $ref: '#/components/responses/Error'
+  /search:
+    get:
+      summary: Search applications by company name
+      parameters:
+      - name: company
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Company name to search (case-insensitive substring match)
+      responses:
+        '200':
+          description: Matching applications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  applications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Application'
+        '400':
+          $ref: '#/components/responses/Error'
+  /stats:
+    get:
+      summary: Get application and monitor statistics
+      responses:
+        '200':
+          description: Aggregate statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_applications:
+                    type: integer
+                  this_month:
+                    type: integer
+                    description: Applications submitted this calendar month
+                  by_status:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                    description: Count of applications grouped by status
+                  by_level:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                    description: Count of applications grouped by level
+                  interview_rate:
+                    type: number
+                    format: float
+                    description: Fraction of applications that reached interview stage
+                  monitor:
+                    type: object
+                    properties:
+                      companies_tracked:
+                        type: integer
+                      active_matches:
+                        type: integer
+                        description: Active job postings matching title filters
+                      new_this_week:
+                        type: integer
+  /monitor/companies:
+    get:
+      summary: List monitored companies
+      responses:
+        '200':
+          description: All monitored companies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  companies:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Company'
+    post:
+      summary: Add a company to monitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - slug
+              properties:
+                slug:
+                  type: string
+                  description: Unique URL-safe identifier
+                name:
+                  type: string
+                sector:
+                  type: string
+                  description: Industry sector (e.g. Healthcare, Fintech, Dev Tools)
+                ats:
+                  type: string
+                  enum:
+                  - greenhouse
+                  - lever
+                  - ashby
+                  - workable
+                  - pinpoint
+                  - workday
+                  description: Applicant tracking system used by the company
+                careers_url:
+                  type: string
+                  format: uri
+                  description: URL of the company's job board page
+                active:
+                  type: boolean
+                  default: true
+                  description: Whether to include in daily scans
+      responses:
+        '201':
+          description: Company added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  company:
+                    $ref: '#/components/schemas/Company'
+        '400':
+          $ref: '#/components/responses/Error'
+  /monitor/companies/{slug}:
+    patch:
+      summary: Update a monitored company
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Fields to update (any Company field)
+              properties:
+                name:
+                  type: string
+                sector:
+                  type: string
+                ats:
+                  type: string
+                careers_url:
+                  type: string
+                active:
+                  type: boolean
+      responses:
+        '200':
+          description: Company updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  company:
+                    $ref: '#/components/schemas/Company'
+        '404':
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: Delete a monitored company
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Company deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: string
+                    description: Slug of the deleted company
+        '404':
+          $ref: '#/components/responses/Error'
+  /monitor/results:
+    get:
+      summary: Get scanner results (matched job postings)
+      description: |
+        Returns job postings found by the career page scanner that match
+        engineering leadership title patterns. Each job is cross-referenced
+        against your applications to flag duplicates.
+      parameters:
+      - name: sector
+        in: query
+        schema:
+          type: string
+        description: Filter by sector
+      - name: status
+        in: query
+        schema:
+          type: string
+        description: Filter by job status (new, reviewed, applied, gone)
+      - name: company
+        in: query
+        schema:
+          type: string
+        description: Filter by company name
+      responses:
+        '200':
+          description: Scanner results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  last_scan:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Timestamp of the most recent scan
+                  total_active:
+                    type: integer
+                  new_since_last:
+                    type: integer
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+  /monitor/jobs/{hash}:
+    patch:
+      summary: Update a scanned job posting
+      description: Typically used to change status (e.g. from "new" to "reviewed")
+      parameters:
+      - name: hash
+        in: path
+        required: true
+        schema:
+          type: string
+        description: MD5 hash identifier of the job posting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - new
+                  - reviewed
+                  - applied
+                  - ignored
+                  - gone
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Job updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job:
+                    $ref: '#/components/schemas/Job'
+        '404':
+          $ref: '#/components/responses/Error'
+  /monitor/scan:
+    post:
+      summary: Trigger a career page scan
+      description: |
+        Asynchronously invokes the scanner Lambda to crawl all active
+        company career pages. Results appear in /monitor/results.
+      responses:
+        '202':
+          description: Scan triggered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Scan triggered
+  /import:
+    post:
+      summary: Import applications from Excel file
+      description: Upload a base64-encoded Excel file to bulk-import applications.
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Import results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported:
+                    type: integer
+                  skipped:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: string
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Use a JWT token from /auth/login, or an API key stored in
+        SSM Parameter Store at /jobtracker/api-key.
+  schemas:
+    Application:
+      type: object
+      properties:
+        sk:
+          type: string
+          description: Application ID (ULID)
+        date:
+          type: string
+          format: date
+        company:
+          type: string
+        role:
+          type: string
+        level:
+          type: string
+        status:
+          type: string
+        source:
+          type: string
+        link:
+          type: string
+          format: uri
+        closed:
+          type: boolean
+        notes:
+          type: string
+        original_week:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Company:
+      type: object
+      properties:
+        sk:
+          type: string
+          description: Company slug
+        name:
+          type: string
+        sector:
+          type: string
+        ats:
+          type: string
+          enum:
+          - greenhouse
+          - lever
+          - ashby
+          - workable
+          - pinpoint
+          - workday
+        careers_url:
+          type: string
+          format: uri
+        active:
+          type: boolean
+    Job:
+      type: object
+      properties:
+        sk:
+          type: string
+          description: MD5 hash identifier
+        company:
+          type: string
+        sector:
+          type: string
+        title:
+          type: string
+        location:
+          type: string
+        location_flag:
+          type: string
+          enum:
+          - good
+          - bad
+          - unknown
+          description: Location classification based on preference list
+        url:
+          type: string
+          format: uri
+        first_seen:
+          type: string
+          format: date
+        last_seen:
+          type: string
+          format: date
+        gone:
+          type: boolean
+          description: Whether the posting has disappeared from the career page
+        status:
+          type: string
+          enum:
+          - new
+          - reviewed
+          - applied
+          - ignored
+          - gone
+        already_applied:
+          type: boolean
+          description: True if you applied to this exact posting (URL match)
+        applied_at_company:
+          type: boolean
+          description: True if you applied to a different role at this company
+  responses:
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string

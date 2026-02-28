@@ -72,7 +72,13 @@ CF_DOMAIN=$(tofu output -raw cloudfront_domain)
 
 cd "$REPO_ROOT/jobtracker"
 
-# --- Step 3: Update frontend config ---
+# --- Step 3: Generate OpenAPI spec ---
+echo ""
+echo "--- Generating OpenAPI spec ---"
+
+uv run scripts/generate_openapi.py
+
+# --- Step 4: Update frontend config ---
 echo ""
 echo "--- Updating frontend config ---"
 
@@ -85,7 +91,7 @@ EOF
 
 echo "Frontend config updated with API URL: $API_URL"
 
-# --- Step 4: Deploy frontend to S3 ---
+# --- Step 5: Deploy frontend to S3 ---
 echo ""
 echo "--- Deploying frontend to S3 ---"
 
@@ -93,7 +99,11 @@ aws s3 sync frontend/ "s3://${FRONTEND_BUCKET}/" \
     --region "$REGION" \
     --delete
 
-# --- Step 5: Invalidate CloudFront cache ---
+aws s3 cp openapi.yaml "s3://${FRONTEND_BUCKET}/.well-known/openapi.yaml" \
+    --region "$REGION" \
+    --content-type "application/yaml"
+
+# --- Step 6: Invalidate CloudFront cache ---
 echo ""
 echo "--- Invalidating CloudFront cache ---"
 

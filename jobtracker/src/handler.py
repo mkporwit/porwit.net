@@ -2,6 +2,7 @@
 
 import os
 import json
+import inspect
 import re
 from datetime import datetime, timezone
 
@@ -9,8 +10,18 @@ from ulid import ULID
 
 import db
 import auth
+import routes
+import schemas
+
+VALID_ATS = set(schemas.SCHEMAS["Company"]["properties"]["ats"]["enum"])
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "*")
+
+# Compile route patterns once at import time
+_COMPILED_ROUTES = []
+for _route in routes.ROUTES:
+    _pattern = re.sub(r"\{(\w+)\}", r"(?P<\1>[^/]+)", _route.path)
+    _COMPILED_ROUTES.append((re.compile(f"^{_pattern}$"), _route))
 
 
 def lambda_handler(event, context):
@@ -27,61 +38,30 @@ def lambda_handler(event, context):
     if method == "OPTIONS":
         return cors_response()
 
-    # Public endpoints
-    if method == "POST" and path == "/auth/login":
-        return handle_login(event)
-
-    # All other endpoints require auth
-    is_authed, identity = auth.authenticate(event)
-    if not is_authed:
-        return error_response(401, identity)
-
-    # Route to handlers
+    # Route to handlers via route table
     try:
-        # Applications
-        if path == "/applications" and method == "GET":
-            return handle_list_applications(event)
-        if path == "/applications" and method == "POST":
-            return handle_create_application(event)
-        if re.match(r"^/applications/[^/]+$", path) and method == "PATCH":
-            app_id = path.split("/")[-1]
-            return handle_update_application(app_id, event)
-        if re.match(r"^/applications/[^/]+$", path) and method == "DELETE":
-            app_id = path.split("/")[-1]
-            return handle_delete_application(app_id)
+        for regex, route in _COMPILED_ROUTES:
+            if route.method != method:
+                continue
+            match = regex.match(path)
+            if not match:
+                continue
 
-        # Search
-        if path == "/search" and method == "GET":
-            return handle_search(event)
+            # Auth check
+            if route.auth:
+                is_authed, identity = auth.authenticate(event)
+                if not is_authed:
+                    return error_response(401, identity)
 
-        # Monitor
-        if path == "/monitor/results" and method == "GET":
-            return handle_monitor_results(event)
-        if path == "/monitor/companies" and method == "GET":
-            return handle_list_companies(event)
-        if path == "/monitor/companies" and method == "POST":
-            return handle_create_company(event)
-        if re.match(r"^/monitor/companies/[^/]+$", path) and method == "PATCH":
-            slug = path.split("/")[-1]
-            return handle_update_company(slug, event)
-        if re.match(r"^/monitor/companies/[^/]+$", path) and method == "DELETE":
-            slug = path.split("/")[-1]
-            return handle_delete_company(slug)
-        if path == "/monitor/scan" and method == "POST":
-            return handle_trigger_scan(event)
-
-        # Monitor jobs
-        if re.match(r"^/monitor/jobs/[^/]+$", path) and method == "PATCH":
-            job_hash = path.split("/")[-1]
-            return handle_update_job(job_hash, event)
-
-        # Stats
-        if path == "/stats" and method == "GET":
-            return handle_stats(event)
-
-        # Import
-        if path == "/import" and method == "POST":
-            return handle_import(event)
+            handler_fn = globals()[route.handler]
+            groups = match.groupdict()
+            # Call handler with the right signature: (event), (param, event), or (param)
+            if groups:
+                sig = inspect.signature(handler_fn)
+                if len(sig.parameters) > len(groups):
+                    return handler_fn(*groups.values(), event)
+                return handler_fn(*groups.values())
+            return handler_fn(event)
 
         return error_response(404, f"Not found: {method} {path}")
 
@@ -217,6 +197,9 @@ def handle_create_company(event):
     slug = body.get("slug", "")
     if not slug:
         return error_response(400, "Missing 'slug'")
+    ats = body.get("ats", "")
+    if not ats or ats not in VALID_ATS:
+        return error_response(400, f"'ats' is required and must be one of: {', '.join(sorted(VALID_ATS))}")
     item = db.put_company(slug, body)
     return json_response(201, {"company": item})
 
@@ -226,6 +209,8 @@ def handle_update_company(slug, event):
     if not existing:
         return error_response(404, f"Company not found: {slug}")
     body = parse_body(event)
+    if "ats" in body and body["ats"] not in VALID_ATS:
+        return error_response(400, f"'ats' must be one of: {', '.join(sorted(VALID_ATS))}")
     updated = db.update_company(slug, body)
     return json_response(200, {"company": updated})
 
