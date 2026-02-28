@@ -153,9 +153,6 @@ def handle_monitor_results(event):
             filters[key] = params[key]
 
     jobs = db.list_jobs(filters=filters if filters else None)
-    # Filter out gone jobs unless specifically requested
-    if "status" not in filters:
-        jobs = [j for j in jobs if not j.get("gone", False)]
 
     # Cross-reference with applications
     app_result = db.list_applications(limit=None)
@@ -172,17 +169,30 @@ def handle_monitor_results(event):
             for ac in applied_companies if ac
         )
 
+    # Compute counts from the full list (before filtering)
+    non_gone = [j for j in jobs if not j.get("gone", False)]
+    by_status = {}
+    for j in non_gone:
+        s = j.get("status", "new")
+        by_status[s] = by_status.get(s, 0) + 1
+    already_applied_count = sum(1 for j in non_gone if j.get("already_applied"))
+
+    # Hide gone/ignored server-side (no UI toggle for these).
+    # poor_match and already_applied are filtered client-side via checkboxes.
+    if "status" not in filters:
+        hidden = {"gone", "ignored"}
+        jobs = [j for j in jobs if j.get("status") not in hidden]
+
     # Get last scan info
     scans = db.list_scan_logs(limit=1)
     last_scan = scans[0]["sk"] if scans else None
 
-    active_jobs = [j for j in jobs if not j.get("gone", False)]
-    new_jobs = [j for j in active_jobs if j.get("status") == "new"]
-
     return json_response(200, {
         "last_scan": last_scan,
-        "total_active": len(active_jobs),
-        "new_since_last": len(new_jobs),
+        "total_active": len(non_gone),
+        "new_since_last": by_status.get("new", 0),
+        "by_status": by_status,
+        "already_applied": already_applied_count,
         "jobs": jobs,
     })
 

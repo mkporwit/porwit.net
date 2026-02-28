@@ -291,7 +291,7 @@ function renderMonitor(results, companiesData) {
 
     const visibleJobs = jobs.filter(j => {
         if (hidePoorMatch && j.status === "poor_match") return false;
-        if (hideApplied && j.already_applied) return false;
+        if (hideApplied && (j.already_applied || j.status === "applied")) return false;
         return true;
     });
     const hiddenCount = jobs.length - visibleJobs.length;
@@ -320,7 +320,7 @@ function renderMonitor(results, companiesData) {
             </label>
             <label class="inline-flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
                 <input type="checkbox" ${hideApplied ? "checked" : ""} onchange="toggleFilter('hideApplied')" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                Hide applied${hideApplied ? ` (${jobs.filter(j => j.already_applied).length})` : ""}
+                Hide applied${hideApplied ? ` (${jobs.filter(j => j.already_applied || j.status === "applied").length})` : ""}
             </label>
             ${hiddenCount > 0 ? `<span class="text-sm text-gray-400">${hiddenCount} hidden</span>` : ""}
         </div>
