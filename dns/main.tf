@@ -104,7 +104,7 @@ resource "azurerm_dns_cname_record" "jobtracker" {
   name                = "jobtracker"
   zone_name           = azurerm_dns_zone.top-level.name
   resource_group_name = var.resource_group_name
-  ttl                 = 3600
+  ttl                 = 60
   record              = "d2dwxp94buikfp.cloudfront.net"
 }
 
@@ -112,7 +112,7 @@ resource "azurerm_dns_cname_record" "jobtracker-acm-validation" {
   name                = "_4d31a7663683b9bc703926ff8ae94b06.jobtracker"
   zone_name           = azurerm_dns_zone.top-level.name
   resource_group_name = var.resource_group_name
-  ttl                 = 3600
+  ttl                 = 60
   record              = "_a3aa780514ee68ac9177e088187db5d4.jkddzztszm.acm-validations.aws."
 }
 
@@ -122,7 +122,7 @@ resource "azurerm_dns_cname_record" "gunset" {
   name                = "gunset"
   zone_name           = azurerm_dns_zone.top-level.name
   resource_group_name = var.resource_group_name
-  ttl                 = 3600
+  ttl                 = 60
   record              = "d1j75d6mvqsxpz.cloudfront.net"
 }
 
@@ -130,6 +130,6 @@ resource "azurerm_dns_cname_record" "gunset-acm-validation" {
   name                = "_cbf5fba40b3b97f1b1b2d0944dbf9c44.gunset"
   zone_name           = azurerm_dns_zone.top-level.name
   resource_group_name = var.resource_group_name
-  ttl                 = 3600
+  ttl                 = 60
   record              = "_10ac216bbe66079118d8316404b270c5.jkddzztszm.acm-validations.aws."
 }
