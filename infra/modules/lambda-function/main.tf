@@ -8,7 +8,7 @@ resource "null_resource" "build" {
       set -e
       rm -rf ${path.module}/.build/${var.function_name}
       mkdir -p ${path.module}/.build/${var.function_name}
-      pip3 install -r ${var.source_dir}/${var.requirements_file} -t ${path.module}/.build/${var.function_name} --quiet --platform manylinux2014_aarch64 --only-binary=:all:
+      pip3 install -r ${var.source_dir}/${var.requirements_file} -t ${path.module}/.build/${var.function_name} --quiet --platform manylinux2014_aarch64 --only-binary=:all: --python-version ${replace(var.runtime, "python", "")}
       cp ${var.source_dir}/*.py ${path.module}/.build/${var.function_name}/
       cp -r ${var.source_dir}/parsers ${path.module}/.build/${var.function_name}/ 2>/dev/null || true
     EOT

@@ -125,7 +125,7 @@ module "cloudfront" {
 # --- IAM ---
 
 resource "aws_iam_role" "lambda" {
-  name = "gunset-api-dev-GunsetFunctionRole"
+  name = "gunset-api-GunsetFunctionRole-Qmvcx7qolK88"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -145,22 +145,23 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
 }
 
 resource "aws_iam_role_policy" "lambda_dynamodb" {
-  name = "dynamodb-crud"
+  name = "GunsetFunctionRolePolicy0"
   role = aws_iam_role.lambda.id
 
   policy = jsonencode({
-    Version = "2012-10-17"
     Statement = [{
       Effect = "Allow"
       Action = [
         "dynamodb:GetItem",
-        "dynamodb:PutItem",
-        "dynamodb:UpdateItem",
         "dynamodb:DeleteItem",
-        "dynamodb:Query",
+        "dynamodb:PutItem",
         "dynamodb:Scan",
+        "dynamodb:Query",
+        "dynamodb:UpdateItem",
         "dynamodb:BatchWriteItem",
         "dynamodb:BatchGetItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:ConditionCheckItem",
       ]
       Resource = [
         module.dynamodb.table_arn,
@@ -171,11 +172,10 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
 }
 
 resource "aws_iam_role_policy" "lambda_ses" {
-  name = "ses-send"
+  name = "GunsetFunctionRolePolicy1"
   role = aws_iam_role.lambda.id
 
   policy = jsonencode({
-    Version = "2012-10-17"
     Statement = [{
       Effect = "Allow"
       Action = [
