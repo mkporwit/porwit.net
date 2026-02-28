@@ -57,7 +57,9 @@ echo "--- Running OpenTofu ---"
 # in a way that the AWS CLI finds but OpenTofu does not)
 eval "$(aws configure export-credentials --format env)"
 
-cd "$(dirname "$0")/infra"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+cd "$REPO_ROOT/infra/stacks/jobtracker"
 
 tofu init
 tofu apply -auto-approve
@@ -68,7 +70,7 @@ FRONTEND_BUCKET=$(tofu output -raw frontend_bucket_name)
 CF_DIST_ID=$(tofu output -raw cloudfront_distribution_id)
 CF_DOMAIN=$(tofu output -raw cloudfront_domain)
 
-cd ..
+cd "$REPO_ROOT/jobtracker"
 
 # --- Step 3: Update frontend config ---
 echo ""
@@ -109,6 +111,5 @@ echo "CloudFront Domain: $CF_DOMAIN"
 echo "Custom Domain:     https://jobtracker.porwit.net"
 echo ""
 echo "Next steps:"
-echo "  1. Point jobtracker.porwit.net CNAME to $CF_DOMAIN (in Azure DNS)"
-echo "  2. Seed companies: cd src && DYNAMODB_TABLE=jobtracker python seed_data.py"
-echo "  3. Import applications: uv run scripts/import_excel.py 'Job_Search_Tracker.xlsx' --table jobtracker"
+echo "  1. Seed companies: cd src && DYNAMODB_TABLE=jobtracker python seed_data.py"
+echo "  2. Import applications: uv run scripts/import_excel.py 'Job_Search_Tracker.xlsx' --table jobtracker"
