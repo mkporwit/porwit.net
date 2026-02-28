@@ -46,6 +46,9 @@ def lambda_handler(event, context):
         if re.match(r"^/applications/[^/]+$", path) and method == "PATCH":
             app_id = path.split("/")[-1]
             return handle_update_application(app_id, event)
+        if re.match(r"^/applications/[^/]+$", path) and method == "DELETE":
+            app_id = path.split("/")[-1]
+            return handle_delete_application(app_id)
 
         # Search
         if path == "/search" and method == "GET":
@@ -61,6 +64,9 @@ def lambda_handler(event, context):
         if re.match(r"^/monitor/companies/[^/]+$", path) and method == "PATCH":
             slug = path.split("/")[-1]
             return handle_update_company(slug, event)
+        if re.match(r"^/monitor/companies/[^/]+$", path) and method == "DELETE":
+            slug = path.split("/")[-1]
+            return handle_delete_company(slug)
         if path == "/monitor/scan" and method == "POST":
             return handle_trigger_scan(event)
 
@@ -134,6 +140,14 @@ def handle_update_application(app_id, event):
     body = parse_body(event)
     updated = db.update_application(app_id, body)
     return json_response(200, {"application": updated})
+
+
+def handle_delete_application(app_id):
+    existing = db.get_application(app_id)
+    if not existing:
+        return error_response(404, f"Application not found: {app_id}")
+    db.delete_application(app_id)
+    return json_response(200, {"deleted": app_id})
 
 
 # --- Search ---
@@ -214,6 +228,14 @@ def handle_update_company(slug, event):
     body = parse_body(event)
     updated = db.update_company(slug, body)
     return json_response(200, {"company": updated})
+
+
+def handle_delete_company(slug):
+    existing = db.get_company(slug)
+    if not existing:
+        return error_response(404, f"Company not found: {slug}")
+    db.delete_company(slug)
+    return json_response(200, {"deleted": slug})
 
 
 def handle_update_job(job_hash, event):

@@ -45,6 +45,11 @@ def get_application(app_id):
     return resp.get("Item")
 
 
+def delete_application(app_id):
+    """Delete an application item."""
+    get_table().delete_item(Key={"pk": "APPLICATION", "sk": app_id})
+
+
 def update_application(app_id, updates):
     """Partial update of an application."""
     updates["updated_at"] = now_iso()
@@ -117,6 +122,11 @@ def put_company(slug, data):
 def get_company(slug):
     resp = get_table().get_item(Key={"pk": "COMPANY", "sk": slug})
     return resp.get("Item")
+
+
+def delete_company(slug):
+    """Delete a monitor company."""
+    get_table().delete_item(Key={"pk": "COMPANY", "sk": slug})
 
 
 def update_company(slug, updates):
