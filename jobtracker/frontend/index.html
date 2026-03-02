@@ -3,17 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Tracker</title>
+    <title>JobTracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        surface: {
+                            DEFAULT: '#0f1623',
+                            light: '#161d2e',
+                        },
+                        body: '#060910',
+                        accent: {
+                            cyan: '#22d3ee',
+                            amber: '#fbbf24',
+                            emerald: '#34d399',
+                            rose: '#f43f5e',
+                        },
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+                        heading: ['Outfit', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Noise texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 256px 256px;
+        }
+
+        #app {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Fade-slide-in animation */
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-in {
+            animation: fadeSlideIn 0.35s ease-out both;
+        }
+        .stagger-1 { animation-delay: 0.05s; }
+        .stagger-2 { animation-delay: 0.10s; }
+        .stagger-3 { animation-delay: 0.15s; }
+        .stagger-4 { animation-delay: 0.20s; }
+
+        /* Glow on hover for surface cards */
+        .card-glow {
+            transition: box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .card-glow:hover {
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.07);
+            border-color: rgba(34, 211, 238, 0.2);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #060910;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        /* Dark inputs */
+        input[type="text"],
+        input[type="password"] {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.15);
+            outline: none;
+        }
+
+        /* Custom checkbox */
+        input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid #475569;
+            border-radius: 3px;
+            background: #0f172a;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+        input[type="checkbox"]:checked {
+            background: #22d3ee;
+            border-color: #22d3ee;
+        }
+        input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 1px;
+            width: 5px;
+            height: 9px;
+            border: solid #060910;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* Toast container */
+        #toast-container {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .toast {
+            animation: fadeSlideIn 0.3s ease-out both;
+        }
+        .toast-exit {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+        }
+
+        /* Status bar segments */
+        .status-bar-segment {
+            transition: width 0.5s ease-out;
+            min-width: 2px;
+        }
+    </style>
     <script src="config.js"></script>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-body text-slate-300 font-mono min-h-screen">
     <div id="app">
-        <!-- App content rendered by app.js -->
         <div class="flex items-center justify-center min-h-screen">
-            <p class="text-gray-500">Loading...</p>
+            <p class="text-slate-600">Loading...</p>
         </div>
     </div>
+    <div id="toast-container"></div>
     <script src="app.js"></script>
 </body>
 </html>
