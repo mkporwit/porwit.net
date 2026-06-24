@@ -4,6 +4,7 @@ Lambda handler for Gunset API
 import json
 import os
 import base64
+import traceback
 import boto3
 from decimal import Decimal
 from email.mime.multipart import MIMEMultipart
@@ -153,7 +154,8 @@ def handle_auth_request(event: dict) -> dict:
         return response(200, {"message": "Magic link sent to your email"})
 
     except Exception as e:
-        print(f"Error in auth request: {e}")
+        traceback.print_exc()
+        print(f"Error in auth request: {type(e).__name__}: {e}")
         return response(500, {"error": "Failed to send magic link"})
 
 
