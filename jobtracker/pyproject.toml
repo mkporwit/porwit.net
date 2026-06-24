@@ -23,7 +23,7 @@ dev = [
 
 [dependency-groups]
 dev = [
-    "mypy>=1.19.1",
+    "mypy>=1.19.1,<2",  # hold at 1.x; 2.0 surfaces new errors, bump deliberately
     "ruff>=0.15.4",
     "types-beautifulsoup4>=4.12.0.20250516",
     "types-requests>=2.32.4.20260107",
