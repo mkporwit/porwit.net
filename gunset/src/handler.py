@@ -4,7 +4,9 @@ Lambda handler for Gunset API
 import json
 import os
 import base64
+import traceback
 import boto3
+from botocore.exceptions import ClientError
 from decimal import Decimal
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -152,8 +154,23 @@ def handle_auth_request(event: dict) -> dict:
 
         return response(200, {"message": "Magic link sent to your email"})
 
-    except Exception as e:
-        print(f"Error in auth request: {e}")
+    except ClientError as e:
+        # Only SES SendEmail carries attacker-controllable PII: /auth/request is
+        # unauthenticated and SES rejection messages echo the submitted email
+        # back. Redact just that path to the AWS error code (e.g. MessageRejected
+        # => unverified/sandbox). Other AWS calls here (DynamoDB via
+        # get_or_create_user/create_session) keep full diagnostics.
+        if e.operation_name == "SendEmail":
+            err = e.response.get("Error", {})
+            req_id = e.response.get("ResponseMetadata", {}).get("RequestId", "")
+            print(f"Auth request failed: SES ClientError {err.get('Code')} (request {req_id})")
+        else:
+            traceback.print_exc()
+        return response(500, {"error": "Failed to send magic link"})
+    except Exception:
+        # Unexpected bug (not an AWS API rejection): full traceback is worth more
+        # than PII caution here, and this path is not attacker-shaped.
+        traceback.print_exc()
         return response(500, {"error": "Failed to send magic link"})
 
 
