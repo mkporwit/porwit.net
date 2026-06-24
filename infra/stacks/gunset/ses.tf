@@ -15,6 +15,10 @@ resource "aws_sesv2_email_identity" "porwit_net" {
 }
 
 # Easy DKIM publishes 3 CNAMEs: <token>._domainkey -> <token>.dkim.amazonses.com
+# ponytail: the "dkim.amazonses.com" suffix is the SES SigningHostedZone for
+# AWS_SES Easy DKIM in commercial regions (verified live for us-west-2: DKIM
+# Status=SUCCESS). If ever applied in a region/cell that returns a different
+# suffix, source it from the identity's SigningHostedZone instead of hardcoding.
 resource "aws_route53_record" "ses_dkim" {
   count   = 3
   zone_id = data.aws_route53_zone.porwit.zone_id

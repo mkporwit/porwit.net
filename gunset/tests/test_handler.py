@@ -97,6 +97,23 @@ class TestAuthRequest:
         assert leak not in out              # no PII leak
         assert "MessageRejected" in out     # operational signal kept
 
+    @patch("handler.create_session")
+    @patch("handler.get_or_create_user")
+    def test_dynamodb_error_keeps_full_traceback(self, mock_user, mock_session, capsys):
+        # A non-SES ClientError (DynamoDB) must NOT take the redacted SES branch;
+        # it keeps the full traceback for diagnostics.
+        from botocore.exceptions import ClientError
+        mock_session.side_effect = ClientError(
+            {"Error": {"Code": "ProvisionedThroughputExceededException", "Message": "throttled"}},
+            "PutItem",
+        )
+        event = make_event("POST", "/auth/request", body={"email": "u@example.com"})
+        result = handler.lambda_handler(event, None)
+        assert result["statusCode"] == 500
+        captured = capsys.readouterr()
+        assert "Traceback" in captured.err
+        assert "SES ClientError" not in captured.out
+
     def test_missing_email_returns_400(self):
         event = make_event("POST", "/auth/request", body={})
         result = handler.lambda_handler(event, None)
