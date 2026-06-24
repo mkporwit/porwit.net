@@ -79,6 +79,24 @@ class TestAuthRequest:
         mock_session.assert_called_once_with("test@example.com")
         mock_email.assert_called_once()
 
+    @patch("handler.send_magic_link_email")
+    @patch("handler.create_session", return_value="tok")
+    @patch("handler.get_or_create_user")
+    def test_ses_error_does_not_leak_email_to_logs(self, mock_user, mock_session, mock_email, capsys):
+        from botocore.exceptions import ClientError
+        leak = "attacker@evil.com"
+        mock_email.side_effect = ClientError(
+            {"Error": {"Code": "MessageRejected", "Message": f"not verified: {leak}"},
+             "ResponseMetadata": {"RequestId": "req-123"}},
+            "SendEmail",
+        )
+        event = make_event("POST", "/auth/request", body={"email": leak})
+        result = handler.lambda_handler(event, None)
+        assert result["statusCode"] == 500
+        out = capsys.readouterr().out
+        assert leak not in out              # no PII leak
+        assert "MessageRejected" in out     # operational signal kept
+
     def test_missing_email_returns_400(self):
         event = make_event("POST", "/auth/request", body={})
         result = handler.lambda_handler(event, None)

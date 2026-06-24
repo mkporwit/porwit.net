@@ -6,6 +6,7 @@ import os
 import base64
 import traceback
 import boto3
+from botocore.exceptions import ClientError
 from decimal import Decimal
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -153,9 +154,19 @@ def handle_auth_request(event: dict) -> dict:
 
         return response(200, {"message": "Magic link sent to your email"})
 
-    except Exception as e:
+    except ClientError as e:
+        # /auth/request is unauthenticated, so the submitted email is
+        # attacker-controllable and SES rejection messages echo it back. Log
+        # only the AWS error code + request id (the operational signal, e.g.
+        # MessageRejected => unverified/sandbox) — never the raw message/PII.
+        err = e.response.get("Error", {})
+        req_id = e.response.get("ResponseMetadata", {}).get("RequestId", "")
+        print(f"Auth request failed: ClientError {err.get('Code')} (request {req_id})")
+        return response(500, {"error": "Failed to send magic link"})
+    except Exception:
+        # Unexpected bug (not an AWS API rejection): full traceback is worth more
+        # than PII caution here, and this path is not attacker-shaped.
         traceback.print_exc()
-        print(f"Error in auth request: {type(e).__name__}: {e}")
         return response(500, {"error": "Failed to send magic link"})
 
 
