@@ -49,6 +49,7 @@ htmlcov/
 # Environments / secrets
 .env
 .envrc
+secrets
 
 # Data files
 *.xlsx
