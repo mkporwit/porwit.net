@@ -50,9 +50,16 @@ async function api(path, options = {}) {
     }
     const resp = await fetch(url, { ...options, headers });
     if (resp.status === 401) {
-        clearToken();
-        render();
-        throw new Error("Unauthorized");
+        // Had a token → session expired/invalid: kick back to login.
+        // No token (e.g. the login request itself) → let the caller show
+        // the server's error instead of wiping the form mid-submit.
+        if (token) {
+            clearToken();
+            render();
+            throw new Error("Unauthorized");
+        }
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || "Unauthorized");
     }
     const data = await resp.json();
     if (!resp.ok) {
