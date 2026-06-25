@@ -11,6 +11,11 @@ echo "Region: $REGION"
 echo "Account: $ACCOUNT_ID"
 echo ""
 
+# --- Step 0: Fail closed if the Lambda requirements are stale (issue #2) ---
+echo "--- Checking Lambda requirements are in sync ---"
+"$(dirname "$0")/scripts/check_requirements.sh"
+echo ""
+
 # --- Step 1: Bootstrap state backend ---
 echo "--- Bootstrapping state backend ---"
 
