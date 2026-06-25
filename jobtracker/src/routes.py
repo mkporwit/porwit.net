@@ -12,8 +12,7 @@ Route = namedtuple("Route", [
     "parameters",   # list of OpenAPI parameter dicts
     "request_body", # OpenAPI requestBody dict or None
     "responses",    # dict of status code str -> OpenAPI response dict
-])
-Route.__new__.__defaults__ = (True, "", None, [], None, {})
+], defaults=(True, "", None, [], None, {}))
 
 ROUTES = [
     # --- Auth ---

@@ -1,6 +1,8 @@
 """OpenAPI component schemas — single source of truth for data models."""
 
-SCHEMAS = {
+from typing import Any
+
+SCHEMAS: dict[str, Any] = {
     "Application": {
         "type": "object",
         "properties": {
