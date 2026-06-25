@@ -1,5 +1,26 @@
 data "aws_region" "current" {}
 
+# CloudFront Function to rewrite SPA routes to /index.html.
+# Scoped to the S3 default behavior only, so API errors pass through unchanged.
+resource "aws_cloudfront_function" "spa_rewrite" {
+  name    = "${replace(var.domain_name, ".", "-")}-spa-rewrite"
+  runtime = "cloudfront-js-2.0"
+  publish = true
+  code    = <<-JS
+    function handler(event) {
+      var request = event.request;
+      var uri = request.uri;
+      // If the URI has a file extension, serve from S3 as-is
+      if (uri.includes('.')) {
+        return request;
+      }
+      // Otherwise rewrite to index.html for SPA client-side routing
+      request.uri = '/index.html';
+      return request;
+    }
+  JS
+}
+
 resource "aws_cloudfront_distribution" "this" {
   enabled             = true
   comment             = "${var.domain_name} distribution"
@@ -55,6 +76,11 @@ resource "aws_cloudfront_distribution" "this" {
         forward = "none"
       }
     }
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.spa_rewrite.arn
+    }
   }
 
   # /api/* -> API Gateway (no caching)
@@ -79,18 +105,9 @@ resource "aws_cloudfront_distribution" "this" {
     max_ttl     = 0
   }
 
-  # SPA routing: 404/403 -> index.html
-  custom_error_response {
-    error_code         = 404
-    response_code      = 200
-    response_page_path = "/index.html"
-  }
-
-  custom_error_response {
-    error_code         = 403
-    response_code      = 200
-    response_page_path = "/index.html"
-  }
+  # NOTE: No custom_error_response blocks here. SPA routing is handled by the
+  # spa_rewrite CloudFront Function on the default (S3) behavior only,
+  # so API 404/403 responses pass through to the client unchanged.
 
   restrictions {
     geo_restriction {
