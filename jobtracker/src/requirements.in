@@ -1,0 +1,14 @@
+# Top-level Lambda runtime deps — human-edited source.
+# boto3 is bundled deliberately: relying on the Lambda runtime SDK skews its
+# botocore against our packaged urllib3 (pulled in by requests). Keep it pinned
+# together in requirements.txt instead.
+#
+# After editing this file, regenerate the pinned requirements.txt:
+#   uv pip compile src/requirements.in --python-platform aarch64-manylinux2014 \
+#     --python-version 3.12 --no-header --no-annotate -o src/requirements.txt
+boto3>=1.34
+pyjwt>=2.8
+bcrypt>=4.0
+requests>=2.31
+beautifulsoup4>=4.12
+python-ulid>=2.2
