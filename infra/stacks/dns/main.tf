@@ -77,7 +77,7 @@ resource "aws_route53_record" "dmarc" {
   ttl     = 300
 
   records = [
-    "v=DMARC1; p=none; rua=mailto:mkporwit+dmarc@porwit.net",
+    "v=DMARC1; p=none; pct=100; rua=mailto:re+xtkshmydec8@dmarc.postmarkapp.com; sp=none; aspf=r;",
   ]
 }
 
